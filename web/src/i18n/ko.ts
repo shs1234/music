@@ -31,8 +31,6 @@ export const ko = {
   },
 
   time: {
-    greeting: (hour: number): string =>
-      hour < 5 ? "좋은 밤이에요" : hour < 12 ? "좋은 아침이에요" : hour < 18 ? "좋은 오후예요" : "좋은 저녁이에요",
     /** 목록 전체 길이. 예: "1시간 5분" */
     total: (seconds: number) => {
       const m = Math.round(seconds / 60);
@@ -60,8 +58,6 @@ export const ko = {
   home: {
     startTitle: "검색으로 시작하세요",
     startBody: "YouTube의 모든 노래와 뮤직비디오를 찾아 광고 없이 오디오나 동영상으로 들을 수 있어요.",
-    seeAll: "모두 보기",
-    yourFavorites: "내 좋아요",
   },
 
   library: {
@@ -231,8 +227,6 @@ export const ko = {
     nothingFoundBody: (query: string, otherTab: string) => `'${query}'에 대한 결과가 없어요. 다른 검색어나 ${otherTab} 탭을 사용해 보세요.`,
     recent: "최근 검색",
     clearRecent: "지우기",
-    idleTitle: "오늘은 뭘 들을까요?",
-    idleBody: "노래, 아티스트, 앨범을 검색하세요. 뮤직비디오나 라이브는 동영상 탭에서 찾을 수 있어요. YouTube 링크를 붙여넣어도 돼요.",
     exploreGenres: "장르별로 둘러보기",
     albums: "앨범",
   },
@@ -350,8 +344,6 @@ export const ko = {
     compactSidebarBody: "아이콘만 표시해 콘텐츠 공간을 넓혀요",
     albumColumn: "곡 목록에 앨범 열 표시",
     texture: "배경 질감",
-    home: "홈 화면",
-    homeShortcuts: "바로가기",
     reset: "기본값으로 되돌리기",
   },
 

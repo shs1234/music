@@ -372,10 +372,9 @@ export default function Search() {
 
         {!linkId && state === "ok" && results && results.length > 0 && <TrackList tracks={results} showAlbum={kind === "song"} />}
 
-        {!linkId && state === "idle" && (
+        {!linkId && state === "idle" && recent.length > 0 && (
           <div className="px-2 md:px-3">
-            {recent.length > 0 ? (
-              <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold tracking-tight">{t.search.recent}</h2>
                   <button
@@ -404,14 +403,7 @@ export default function Search() {
                     </button>
                   ))}
                 </div>
-              </div>
-            ) : (
-              <EmptyState
-                icon={<MagnifyingGlassIcon size={28} />}
-                title={t.search.idleTitle}
-                body={t.search.idleBody}
-              />
-            )}
+            </div>
           </div>
         )}
       </div>

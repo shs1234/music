@@ -6,9 +6,6 @@ export interface Appearance {
   compactSidebar: boolean;
   albumColumn: boolean;
   texture: boolean;
-  homeShortcuts: boolean;
-  homeRecent: boolean;
-  homeFavorites: boolean;
 }
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -16,9 +13,6 @@ export const DEFAULT_APPEARANCE: Appearance = {
   compactSidebar: false,
   albumColumn: true,
   texture: true,
-  homeShortcuts: true,
-  homeRecent: true,
-  homeFavorites: true,
 };
 
 const KEY = "musike:appearance";

@@ -1,10 +1,11 @@
 import { XIcon } from "@phosphor-icons/react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useDragControls, useReducedMotion } from "motion/react";
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MD, useMediaQuery } from "../hooks/useMediaQuery";
 import { useT } from "../i18n";
 import { IconButton } from "./IconButton";
+import { PresenceLayer } from "./PresenceLayer";
 
 /**
  * Layering (z-index) used across the app:
@@ -29,14 +30,15 @@ export function Modal({ open, onClose, title, children }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
+  const drag = useDragControls();
   const from = reduce ? { opacity: 0 } : isMd ? { opacity: 0, scale: 0.96, y: 8 } : { y: "100%" };
 
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
+        <PresenceLayer className="fixed inset-0 z-50 flex items-end justify-center md:items-center">
           <motion.div
-            className="absolute inset-0 bg-scrim"
+            className="absolute inset-0 touch-none bg-scrim"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -51,10 +53,18 @@ export function Modal({ open, onClose, title, children }: Props) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={from}
             transition={{ type: "spring", stiffness: 420, damping: 38 }}
+            drag={isMd ? false : "y"}
+            dragListener={false}
+            dragControls={drag}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 1 }}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 80 || info.velocity.y > 500) onClose();
+            }}
             className="island safe-bottom relative w-full rounded-b-none md:mx-4 md:max-w-md md:rounded-[20px]"
           >
             <div className="island-core p-4 md:p-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="mb-3 flex touch-none items-center justify-between gap-3" onPointerDown={(e) => !isMd && drag.start(e)}>
                 <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
                 <IconButton label={t.common.close} size="sm" onClick={onClose}>
                   <XIcon size={18} />
@@ -63,7 +73,7 @@ export function Modal({ open, onClose, title, children }: Props) {
               {children}
             </div>
           </motion.div>
-        </div>
+        </PresenceLayer>
       )}
     </AnimatePresence>,
     document.body,

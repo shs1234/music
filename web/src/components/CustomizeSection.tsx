@@ -1,4 +1,3 @@
-import { CheckIcon } from "@phosphor-icons/react";
 import { useT } from "../i18n";
 import { cn } from "../lib/format";
 import { useAppearance } from "../stores/appearance";
@@ -30,18 +29,12 @@ function SwitchRow({ label, body, checked, onChange }: { label: string; body?: s
   );
 }
 
-/** What the app shows: panels, sidebar, list columns and the Home sections. */
+/** What the app shows: panels, sidebar and list columns. */
 export function LayoutSection() {
   const t = useT();
   const a = useAppearance();
   const panelOpen = useUi((s) => s.panelOpen);
   const setPanelDocked = useUi((s) => s.setPanelDocked);
-
-  const homeSections = [
-    ["homeShortcuts", t.customize.homeShortcuts],
-    ["homeRecent", t.nav.recentlyPlayed],
-    ["homeFavorites", t.home.yourFavorites],
-  ] as const;
 
   return (
     <section className="flex flex-col gap-2">
@@ -59,25 +52,6 @@ export function LayoutSection() {
         <SwitchRow label={t.customize.texture} checked={a.texture} onChange={(v) => a.set({ texture: v })} />
       </div>
 
-      <p className="pt-2 text-[13px] text-fg-2">{t.customize.home}</p>
-      <div className="flex flex-wrap gap-2">
-        {homeSections.map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            role="checkbox"
-            aria-checked={a[key]}
-            onClick={() => a.set({ [key]: !a[key] })}
-            className={cn(
-              "flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium ring-1 transition-colors",
-              a[key] ? "bg-accent-soft text-accent-text ring-accent/40" : "text-fg-2 ring-line hover:text-fg",
-            )}
-          >
-            {a[key] && <CheckIcon size={14} weight="bold" />}
-            {label}
-          </button>
-        ))}
-      </div>
 
       <button
         type="button"

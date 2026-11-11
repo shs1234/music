@@ -122,7 +122,7 @@ export function SettingsDialog() {
   return (
     <Modal open={open} onClose={() => setOpen(false)} title={t.settings.title}>
       {/* Side padding keeps outset rings and the scrollbar from clipping the cards' edges. */}
-      <div className="scroll-area -mx-2 flex max-h-[70dvh] flex-col gap-5 overflow-y-auto px-2 pb-1">
+      <div className="scroll-area -mx-2 flex max-h-[70dvh] flex-col gap-5 overflow-y-auto overscroll-contain px-2 pb-1">
         <AccountSection />
 
         <section className="flex flex-col gap-2">

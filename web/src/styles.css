@@ -109,17 +109,13 @@
 }
 
 @layer components {
-  /* Floating island with a nested bezel: outer shell + inner core (high-end-visual-design). */
+  /* Panels, sheets and the mini player: one flat surface (the core only lays out the content). */
   .island {
-    background: var(--surface-1);
-    border: 1px solid var(--line);
+    background: var(--surface-2);
     border-radius: var(--radius-panel);
-    padding: 5px;
   }
   .island-core {
-    background: var(--surface-2);
-    border-radius: calc(var(--radius-panel) - 5px);
-    box-shadow: inset 0 1px 0 var(--highlight);
+    border-radius: inherit;
   }
 
   .scroll-area {

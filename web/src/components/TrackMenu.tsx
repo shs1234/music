@@ -17,6 +17,7 @@ import { usePlayer } from "../player/player";
 import { useLibrary } from "../stores/library";
 import { useUi } from "../stores/ui";
 import { Artwork } from "./Artwork";
+import { PresenceLayer } from "./PresenceLayer";
 
 function Item({ icon, children, onClick, danger }: { icon: ReactNode; children: ReactNode; onClick: () => void; danger?: boolean }) {
   return (
@@ -114,7 +115,7 @@ export function TrackMenu() {
   return createPortal(
     <AnimatePresence>
       {menu && (
-        <div className="fixed inset-0 z-50" onContextMenu={(e) => e.preventDefault()}>
+        <PresenceLayer className={cn("fixed inset-0 z-50", !isMd && "touch-none")} onContextMenu={(e) => e.preventDefault()}>
           <motion.div
             className={cn("absolute inset-0", isMd ? "bg-transparent" : "bg-scrim")}
             initial={{ opacity: 0 }}
@@ -140,6 +141,12 @@ export function TrackMenu() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", stiffness: 420, damping: 40 }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0, bottom: 1 }}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 80 || info.velocity.y > 500) close();
+              }}
               className="island safe-bottom absolute inset-x-0 bottom-0 rounded-b-none"
             >
               <div className="island-core p-2">
@@ -156,7 +163,7 @@ export function TrackMenu() {
               </div>
             </motion.div>
           )}
-        </div>
+        </PresenceLayer>
       )}
     </AnimatePresence>,
     document.body,

@@ -68,7 +68,7 @@ export function AddToPlaylistDialog() {
           </div>
         </form>
       ) : (
-        <div className="-mx-1 flex max-h-[55dvh] flex-col overflow-y-auto scroll-area">
+        <div className="-mx-1 flex max-h-[55dvh] flex-col overflow-y-auto overscroll-contain scroll-area">
           <button
             type="button"
             onClick={() => setCreating(true)}

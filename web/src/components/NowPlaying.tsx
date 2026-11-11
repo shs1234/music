@@ -5,8 +5,8 @@ import {
   VideoCameraSlashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { AnimatePresence, motion, useDragControls, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useDragControls, useReducedMotion, type DragControls } from "motion/react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useT } from "../i18n";
 import { cn } from "../lib/format";
@@ -16,6 +16,7 @@ import { useUi, type PanelTab } from "../stores/ui";
 import { Artwork } from "./Artwork";
 import { FavoriteButton, ModeSwitch, Scrubber, Transport } from "./Controls";
 import { IconButton } from "./IconButton";
+import { PresenceLayer } from "./PresenceLayer";
 import { QueueList } from "./Queue";
 import { SLOT, VideoSlot } from "./Video";
 
@@ -218,17 +219,58 @@ export function PanelDrawer() {
   );
 }
 
+/**
+ * Pulling a list down while it is already at the top drags the sheet instead (to close it), as phone apps do.
+ * Moving up, or starting lower in the list, scrolls the list as usual.
+ */
+function usePullDownToDrag(ref: RefObject<HTMLElement | null>, drag: DragControls, enabled: boolean) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) return;
+    let startY = 0;
+    let atTop = false;
+    let dragging = false;
+    const onDown = (e: PointerEvent) => {
+      startY = e.clientY;
+      atTop = el.scrollTop <= 0;
+      dragging = false;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (atTop && !dragging && e.clientY - startY > 6) {
+        dragging = true;
+        drag.start(e);
+      }
+    };
+    // Keep the browser from scrolling (or bouncing) the list while it is being pulled down from the top.
+    const onTouchMove = (e: TouchEvent) => {
+      const y = e.touches[0]?.clientY ?? 0;
+      if (atTop && el.scrollTop <= 0 && y >= startY) e.preventDefault();
+    };
+    el.addEventListener("pointerdown", onDown);
+    el.addEventListener("pointermove", onMove);
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      el.removeEventListener("pointermove", onMove);
+      el.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [ref, drag, enabled]);
+}
+
 /** Full-screen Now Playing for phones. Drag down (or Back) to close. */
 export function NowPlayingSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const track = usePlayer(selectCurrent);
   const reduce = useReducedMotion();
   const drag = useDragControls();
   const [view, setView] = useState<"player" | "queue">("player");
+  const queueRef = useRef<HTMLDivElement>(null);
   const t = useT();
+  usePullDownToDrag(queueRef, drag, open && view === "queue");
 
   return createPortal(
     <AnimatePresence onExitComplete={() => setView("player")}>
       {open && track && (
+        <PresenceLayer className="contents">
         <motion.div
           role="dialog"
           aria-modal="true"
@@ -272,12 +314,18 @@ export function NowPlayingSheet({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             {view === "queue" ? (
-              <div className="scroll-area -mx-3 min-h-0 flex-1 overflow-y-auto pb-[calc(24px+env(safe-area-inset-bottom))]">
+              <div ref={queueRef} className="scroll-area -mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(24px+env(safe-area-inset-bottom))]">
                 <QueueList />
               </div>
             ) : (
-              <div className="flex flex-1 flex-col justify-evenly gap-4 pb-[calc(16px+env(safe-area-inset-bottom))]">
-                <div className="touch-none" onPointerDown={(e) => drag.start(e)}>
+              <div
+                className="flex flex-1 touch-none flex-col justify-evenly gap-4 pb-[calc(16px+env(safe-area-inset-bottom))]"
+                onPointerDown={(e) => {
+                  // Anywhere but the progress bar drags the sheet; taps on buttons still go through.
+                  if (!(e.target as Element).closest("[role=slider]")) drag.start(e);
+                }}
+              >
+                <div>
                   <Stage track={track} slot={SLOT.sheet} className="max-w-[min(100%,46dvh)]" />
                 </div>
                 <div className="flex flex-col gap-4">
@@ -290,6 +338,7 @@ export function NowPlayingSheet({ open, onClose }: { open: boolean; onClose: () 
             )}
           </div>
         </motion.div>
+        </PresenceLayer>
       )}
     </AnimatePresence>,
     document.body,
