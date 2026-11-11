@@ -1,0 +1,12 @@
+{
+  "name": "musike",
+  "private": true,
+  "version": "1.5.1",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @musike/mobile build",
+    "apk": "pnpm --filter @musike/mobile apk",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "packageManager": "pnpm@10.14.0"
+}

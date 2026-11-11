@@ -1,0 +1,6 @@
+packages:
+  - server
+  - web
+  - mobile
+onlyBuiltDependencies:
+  - esbuild

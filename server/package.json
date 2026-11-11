@@ -1,0 +1,10 @@
+{
+  "name": "@musike/server",
+  "private": true,
+  "version": "1.5.1",
+  "type": "module",
+  "dependencies": {
+    "youtubei.js": "18.1.0"
+  },
+  "description": "Musike's catalog and library code, run inside the Android app (imported by web/src/native)."
+}
