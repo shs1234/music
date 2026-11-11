@@ -291,7 +291,7 @@ public class PlaybackService extends Service {
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setShowWhen(false)
             .setOngoing(state.playing)
-            .setColor(0xFFC3EC52)
+            .setColor(0xFF3B82F6)
             .addAction(action(R.drawable.ic_media_previous, R.string.playback_previous, "previous"))
             .addAction(
                 state.playing

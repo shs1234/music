@@ -342,18 +342,6 @@ export const ko = {
   },
 
   customize: {
-    accent: "강조 색상",
-    customColor: "직접 고르기",
-    colors: {
-      volt: "볼트",
-      mint: "민트",
-      aqua: "아쿠아",
-      sky: "하늘",
-      violet: "보라",
-      pink: "분홍",
-      coral: "코랄",
-      amber: "앰버",
-    },
     layout: "레이아웃",
     panel: "지금 재생 중 패널",
     panelBody: "넓은 화면에서 오른쪽에 고정돼요",

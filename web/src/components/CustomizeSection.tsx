@@ -1,62 +1,8 @@
-import { CheckIcon, PaletteIcon } from "@phosphor-icons/react";
+import { CheckIcon } from "@phosphor-icons/react";
 import { useT } from "../i18n";
-import { inkFor } from "../lib/accent";
 import { cn } from "../lib/format";
-import { ACCENTS, useAppearance } from "../stores/appearance";
+import { useAppearance } from "../stores/appearance";
 import { useUi } from "../stores/ui";
-
-/** Ready-made accent swatches plus any colour from the system picker. */
-export function AccentPicker() {
-  const t = useT();
-  const accent = useAppearance((s) => s.accent);
-  const set = useAppearance((s) => s.set);
-  const custom = !ACCENTS.some((a) => a.color === accent);
-  const swatch = "grid size-8 shrink-0 place-items-center rounded-full ring-offset-2 ring-offset-surface-2 transition-transform active:scale-90";
-
-  return (
-    <div className="flex flex-col gap-2 pt-1">
-      <p className="text-[13px] text-fg-2">{t.customize.accent}</p>
-      <div role="radiogroup" aria-label={t.customize.accent} className="flex flex-wrap items-center gap-2.5">
-        {ACCENTS.map(({ id, color }) => {
-          const on = accent === color;
-          return (
-            <button
-              key={id}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              aria-label={t.customize.colors[id]}
-              title={t.customize.colors[id]}
-              onClick={() => set({ accent: color })}
-              className={cn(swatch, on && "ring-2 ring-fg")}
-              style={{ background: color }}
-            >
-              {on && <CheckIcon size={15} weight="bold" style={{ color: inkFor(color) }} />}
-            </button>
-          );
-        })}
-        <label
-          title={t.customize.customColor}
-          className={cn(swatch, "relative cursor-pointer", custom && "ring-2 ring-fg")}
-          style={{ background: custom ? accent : "conic-gradient(#f43f5e, #fbbf24, #a3e635, #22d3ee, #6366f1, #d946ef, #f43f5e)" }}
-        >
-          <input
-            type="color"
-            value={accent}
-            onChange={(e) => set({ accent: e.target.value })}
-            aria-label={t.customize.customColor}
-            className="absolute inset-0 size-full cursor-pointer rounded-full opacity-0"
-          />
-          {custom ? (
-            <CheckIcon size={15} weight="bold" style={{ color: inkFor(accent) }} />
-          ) : (
-            <PaletteIcon size={15} weight="bold" className="text-white drop-shadow" />
-          )}
-        </label>
-      </div>
-    </div>
-  );
-}
 
 function SwitchRow({ label, body, checked, onChange }: { label: string; body?: string; checked: boolean; onChange: (on: boolean) => void }) {
   return (

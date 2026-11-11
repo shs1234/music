@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon: two beamed eighth notes in white (adaptive icon foreground, 108dp grid). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:pivotX="54" android:pivotY="54.5" android:scaleX="0.8" android:scaleY="0.8">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M29,72 a9.5,9.5 0 1,0 19,0 a9.5,9.5 0 1,0 -19,0z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M42.5,34h5.5v38h-5.5z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M60,66 a9.5,9.5 0 1,0 19,0 a9.5,9.5 0 1,0 -19,0z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M73.5,28.5 L79,27.5 L79,66 L73.5,66z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M42.5,34 L79,27.5 L79,37 L42.5,43.5z" />
+    </group>
+</vector>

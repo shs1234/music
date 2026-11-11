@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Musike's logo for the status bar: Android draws it in a single color. -->
+<!-- Notification icon: the app's notes, white (the system tints it). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="34"
-    android:viewportHeight="34">
-    <group android:translateX="3" android:translateY="3">
-        <path android:fillColor="#FFFFFFFF" android:pathData="M4,0a4,4 0 0 1 4,4v20a4,4 0 0 1 -8,0v-20a4,4 0 0 1 4,-4z M14,0a4,4 0 0 1 4,4v8a4,4 0 0 1 -8,0v-8a4,4 0 0 1 4,-4z M24,0a4,4 0 0 1 4,4v20a4,4 0 0 1 -8,0v-20a4,4 0 0 1 4,-4z" />
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:pivotX="54" android:pivotY="54" android:scaleX="1.7" android:scaleY="1.7" android:translateY="-0.85">
+        <path android:fillColor="#FFFFFFFF" android:pathData="M29,72 a9.5,9.5 0 1,0 19,0 a9.5,9.5 0 1,0 -19,0z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M42.5,34h5.5v38h-5.5z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M60,66 a9.5,9.5 0 1,0 19,0 a9.5,9.5 0 1,0 -19,0z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M73.5,28.5 L79,27.5 L79,66 L73.5,66z" />
+        <path android:fillColor="#FFFFFFFF" android:pathData="M42.5,34 L79,27.5 L79,37 L42.5,43.5z" />
     </group>
 </vector>

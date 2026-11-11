@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { accountAvailable } from "../native/account";
 import { useAccount } from "../stores/account";
 
-/** Settings → YouTube Music account: sign in, sign out (keeping the Google session), or forget the Google account. */
+/** Settings → Google account: sign in, sign out (keeping the Google session), or forget the Google account. */
 export function AccountSection() {
   const { status, busy, check, signIn, signOut } = useAccount();
 
@@ -21,7 +21,7 @@ export function AccountSection() {
         <div className="flex items-center gap-3">
           <UserCircleIcon size={28} className={status === "signedIn" ? "text-accent-text" : "text-fg-3"} />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">YouTube Music</p>
+            <p className="text-sm font-medium">Google</p>
             <p className="text-xs text-fg-2">{status === "signedIn" ? "로그인됨" : status === "signedOut" ? "로그인 안 됨" : "확인 중"}</p>
           </div>
           {status === "signedIn" ? (
@@ -34,16 +34,13 @@ export function AccountSection() {
             </button>
           )}
         </div>
-        <p className="text-xs text-fg-3">
-          로그아웃해도 Google 계정 로그인은 남아 있어서, 다시 로그인할 때 비밀번호 없이 바로 들어와요.
-        </p>
         <button
           type="button"
           disabled={busy}
           onClick={() => void signOut(true)}
           className="self-start text-xs text-fg-2 underline underline-offset-2 disabled:opacity-60"
         >
-          Google 계정까지 로그아웃 (다른 계정으로 바꿀 때)
+          다른 계정으로 바꾸기
         </button>
       </div>
     </section>
