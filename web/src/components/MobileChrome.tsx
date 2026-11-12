@@ -1,4 +1,4 @@
-import { BooksIcon, HouseIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { BooksIcon, HouseIcon, MagnifyingGlassIcon, SkipBackIcon, SkipForwardIcon } from "@phosphor-icons/react";
 import { NavLink, useNavigate } from "react-router";
 import { cn } from "../lib/format";
 import { useT } from "../i18n";
@@ -60,6 +60,8 @@ export function MiniPlayer() {
   const status = usePlayer((s) => s.status);
   const statusText = useStatusText();
   const toggle = usePlayer((s) => s.toggle);
+  const prev = usePlayer((s) => s.prev);
+  const next = usePlayer((s) => s.next);
   const t = useT();
   const navigate = useNavigate();
   if (!track) return null;
@@ -85,11 +87,27 @@ export function MiniPlayer() {
           </button>
           <button
             type="button"
+            onClick={prev}
+            aria-label={t.player.previous}
+            className="grid size-10 shrink-0 place-items-center rounded-full text-fg active:scale-90"
+          >
+            <SkipBackIcon size={20} weight="fill" />
+          </button>
+          <button
+            type="button"
             onClick={toggle}
             aria-label={status === "playing" ? t.common.pause : t.common.play}
-            className="grid size-11 shrink-0 place-items-center rounded-full text-fg active:scale-90"
+            className="-mx-1 grid size-11 shrink-0 place-items-center rounded-full text-fg active:scale-90"
           >
             <PlayPauseIcon size={24} />
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            aria-label={t.player.next}
+            className="grid size-10 shrink-0 place-items-center rounded-full text-fg active:scale-90"
+          >
+            <SkipForwardIcon size={20} weight="fill" />
           </button>
           <span className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-surface-4">
             <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
