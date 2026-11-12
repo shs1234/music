@@ -10,6 +10,9 @@ import { nativeFetch } from "./http";
  * 1st: "Quick picks" from the YouTube Music home (WEB_REMIX, browse FEmusic_home).
  * 2nd: YouTube's "My Mix" (WEB, next playlistId=RDMM). In some countries (Korea) YouTube Music is Premium-only,
  *      so a free account's home comes back empty while My Mix still works.
+ *
+ * Next to it: YouTube Music's own personalized mixes (WEB_REMIX, next playlistId=RDTMAK5uy_…), which free accounts get
+ * there too.
  */
 
 interface AuthPlugin {
@@ -107,6 +110,28 @@ export async function videoMix(id: string): Promise<Track[]> {
   return unique(items.map((c) => c?.playlistPanelVideoRenderer).map(panelItem)).filter((t) => t.id !== id);
 }
 
+/** YouTube Music's personalized mixes. The playlist ids are the same for every account; what is in them is not. */
+export const MUSIC_MIXES = [
+  { id: "RDTMAK5uy_kset8DisdE7LSD4TNjEVvrKRTmG7a56sY", title: "나만의 믹스" },
+  { id: "RDTMAK5uy_n_5IN6hzAOwdCnM8D8rzrs3vDl12UcZpA", title: "나만을 위한 추천 믹스" },
+  { id: "RDTMAK5uy_lr0LWzGrq6FU9GIxWvFHTRPQD2LHMqlFA", title: "최신음악 믹스" },
+  { id: "RDTMAK5uy_mZtXeU08kxXJOUhL0ETdAuZTh1z7aAFAo", title: "보관 콘텐츠 믹스" },
+] as const;
+
+/**
+ * One of YouTube Music's mixes (WEB_REMIX, next playlistId). Unlike the home feed, the mixes are served to free
+ * accounts in Premium-only countries too. Only the first page (about 24 tracks) is read.
+ */
+export async function musicMix(playlistId: string): Promise<Track[]> {
+  const { cookie } = await Auth.status();
+  if (!cookie) throw new SignedOutError();
+  const json = await post(cookie, MUSIC, "next", WEB_REMIX, { playlistId });
+  const items: any[] =
+    json?.contents?.singleColumnMusicWatchNextResultsRenderer?.tabbedRenderer?.watchNextTabbedResultsRenderer?.tabs?.[0]?.tabRenderer
+      ?.content?.musicQueueRenderer?.content?.playlistPanelRenderer?.contents ?? [];
+  return unique(items.map((c) => c?.playlistPanelVideoRenderer).map(queueItem));
+}
+
 function musicItem(r: any): Track | null {
   if (!r) return null;
   const id: string | undefined =
@@ -119,29 +144,51 @@ function musicItem(r: any): Track | null {
   const artists = second.filter((x) => x?.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("UC")).map((x) => x.text);
   const album = second.find((x) => x?.navigationEndpoint?.browseEndpoint?.browseId?.startsWith("MPRE"))?.text;
   const thumbs: any[] = r.thumbnail?.musicThumbnailRenderer?.thumbnail?.thumbnails ?? [];
-  const thumb: string = thumbs[thumbs.length - 1]?.url ?? "";
-  const square = /googleusercontent\.com|ggpht\.com/.test(thumb);
   return {
     id,
     title: runs(columns[0]),
     artist: artists.join(", ") || second[0]?.text || "",
     album,
     duration: 0,
+    ...cover(id, thumbs[thumbs.length - 1]?.url ?? ""),
+  };
+}
+
+/** A track of a YouTube Music queue (the `next` response of WEB_REMIX). */
+function queueItem(r: any): Track | null {
+  const id: string | undefined = r?.videoId;
+  if (!id) return null;
+  const thumbs: any[] = r.thumbnail?.thumbnails ?? [];
+  return {
+    id,
+    title: runs(r.title?.runs),
+    artist: runs(r.shortBylineText?.runs),
+    duration: seconds(runs(r.lengthText?.runs)),
+    ...cover(id, thumbs[thumbs.length - 1]?.url ?? ""),
+  };
+}
+
+/** Songs carry a square cover on Google's image host, resized by its URL suffix; videos only have their own frame. */
+function cover(id: string, thumb: string): Pick<Track, "thumb" | "art" | "kind"> {
+  const square = /googleusercontent\.com|ggpht\.com/.test(thumb);
+  return {
     thumb: square ? thumb.replace(/=w\d+-h\d+[^&]*$/, "=w120-h120-l90-rj") : `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
     art: square ? thumb.replace(/=w\d+-h\d+[^&]*$/, "=w544-h544-l90-rj") : `https://i.ytimg.com/vi/${id}/hq720.jpg`,
     kind: square ? "song" : "video",
   };
 }
 
+/** "3:05" or "1:02:03" in seconds. */
+const seconds = (length: string): number => length.split(":").reduce((acc, p) => acc * 60 + (Number(p) || 0), 0);
+
 function panelItem(r: any): Track | null {
   const id: string | undefined = r?.videoId;
   if (!id) return null;
-  const length: string = r.lengthText?.simpleText ?? "";
   return {
     id,
     title: r.title?.simpleText ?? runs(r.title?.runs),
     artist: runs(r.shortBylineText?.runs ?? r.longBylineText?.runs),
-    duration: length.split(":").reduce((acc: number, p: string) => acc * 60 + (Number(p) || 0), 0),
+    duration: seconds(r.lengthText?.simpleText ?? ""),
     thumb: `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
     art: `https://i.ytimg.com/vi/${id}/hq720.jpg`,
     kind: "video",

@@ -1,21 +1,39 @@
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useNavigate } from "react-router";
 import { LogoMark } from "../components/Brand";
+import { IconButton } from "../components/IconButton";
 import { PageHeader } from "../components/Page";
+import { PullToRefresh } from "../components/PullToRefresh";
 import { QuickPicks } from "../components/QuickPicks";
 import { useT } from "../i18n";
 import { paths } from "../lib/routes";
+import { accountAvailable } from "../native/account";
+import { useAccount } from "../stores/account";
 import { useLibrary } from "../stores/library";
+import { usePicks } from "../stores/picks";
 
 export default function Home() {
   const { favorites, playlists, history, status } = useLibrary();
   const navigate = useNavigate();
   const t = useT();
   const empty = status === "ready" && !favorites.length && !playlists.length && !history.length;
+  // The recommendation shelves are all there is to refresh, and they need the account.
+  const canRefresh = useAccount((s) => s.status === "signedIn") && accountAvailable();
+  const refreshing = usePicks((s) => s.loading);
+  const refresh = () => void usePicks.getState().refresh();
 
   return (
     <div className="pb-8">
-      <PageHeader />
+      <PageHeader
+        actions={
+          canRefresh && (
+            <IconButton label="추천곡 새로고침" disabled={refreshing} onClick={refresh} className="disabled:opacity-100">
+              <ArrowClockwiseIcon size={22} className={refreshing ? "animate-spin" : undefined} />
+            </IconButton>
+          )
+        }
+      />
+      {canRefresh && <PullToRefresh onRefresh={refresh} busy={refreshing} />}
 
       <div className="pt-2 md:pt-8" />
 

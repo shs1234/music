@@ -16,9 +16,10 @@ interface RowProps {
   onPlay: () => void;
   playlistId?: string;
   showAlbum: boolean;
+  className?: string;
 }
 
-const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, showAlbum }: RowProps) {
+const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, showAlbum, className }: RowProps) {
   const isCurrent = usePlayer((s) => selectCurrent(s)?.id === track.id);
   const isPlaying = usePlayer((s) => s.status === "playing" || s.status === "loading");
   const isFavorite = useLibrary((s) => s.favorites.some((t) => t.id === track.id));
@@ -42,6 +43,7 @@ const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, s
         showAlbum
           ? "grid-cols-[auto_1fr_auto] md:grid-cols-[28px_auto_1fr_auto_auto] lg:grid-cols-[28px_auto_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto]"
           : "grid-cols-[auto_1fr_auto] md:grid-cols-[28px_auto_1fr_auto_auto]",
+        className,
       )}
     >
       <button
@@ -155,6 +157,18 @@ export function TrackList({ tracks, context, playlistId, showAlbum: albumWanted 
         ))}
       </ul>
     </div>
+  );
+}
+
+/** Tracks four to a column, swiped sideways one column at a time; the next column peeks in from the edge. */
+export function TrackShelf({ tracks }: { tracks: Track[] }) {
+  const playList = usePlayer((s) => s.playList);
+  return (
+    <ul className="no-scrollbar grid snap-x snap-mandatory scroll-px-2 auto-cols-[calc(100%-3.5rem)] grid-flow-col grid-rows-4 gap-x-2 overflow-x-auto overscroll-x-contain px-2 md:scroll-px-3 md:auto-cols-[calc(50%-2rem)] md:px-3">
+      {tracks.map((t, i) => (
+        <TrackRow key={t.id} track={t} position={i} showAlbum={false} className="snap-start" onPlay={() => playList(tracks, i)} />
+      ))}
+    </ul>
   );
 }
 
