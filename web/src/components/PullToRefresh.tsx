@@ -18,9 +18,10 @@ export function PullToRefresh({ onRefresh, busy }: { onRefresh: () => void; busy
   const refresh = useRef(onRefresh);
   refresh.current = onRefresh;
 
+  // Also covers a refresh that had nothing to wait for and so never was busy.
   useEffect(() => {
-    if (!busy) setPulled(false);
-  }, [busy]);
+    if (pulled && !busy) setPulled(false);
+  }, [busy, pulled]);
 
   useEffect(() => {
     const scroller = anchor.current?.closest("main");

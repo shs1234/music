@@ -6,6 +6,7 @@ import { NOW_PLAYING_HASH, paths } from "../lib/routes";
 import { selectCurrent, usePlayer, useStatusText } from "../player/player";
 import { Artwork } from "./Artwork";
 import { PlayPauseIcon } from "./Controls";
+import { Marquee } from "./Marquee";
 
 const tabs = [
   { to: paths.home, key: "home", Icon: HouseIcon, end: true },
@@ -78,8 +79,8 @@ export function MiniPlayer() {
             aria-label={t.player.openNowPlaying(track.title)}
           >
             <Artwork src={track.thumb} className="size-11 rounded-[10px]" />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-medium">{track.title}</span>
+            <span className="min-w-0 flex-1">
+              <Marquee text={track.title} className="text-sm font-medium" />
               <span className={cn("block truncate text-xs", status === "error" ? "text-danger" : "text-fg-2")}>
                 {statusText ?? track.artist}
               </span>

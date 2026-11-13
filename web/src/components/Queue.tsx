@@ -5,7 +5,8 @@ import { usePlayer } from "../player/player";
 import { Artwork } from "./Artwork";
 import { Equalizer } from "./Brand";
 
-export function QueueList({ compact = false }: { compact?: boolean }) {
+/** The playing track and what follows it, in one list: the playing one is marked, the rest can be removed. */
+export function QueueList() {
   const t = useT();
   const queue = usePlayer((s) => s.queue);
   const index = usePlayer((s) => s.index);
@@ -32,60 +33,54 @@ export function QueueList({ compact = false }: { compact?: boolean }) {
   const row = (i: number, isCurrent: boolean) => {
     const track = queue[i];
     return (
-      <li key={`${track.id}-${i}`} className="group relative flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-surface-3">
+      <li
+        key={`${track.id}-${i}`}
+        className={cn("group relative flex items-center gap-3 rounded-xl px-2 py-2", isCurrent ? "bg-surface-3" : "hover:bg-surface-3")}
+      >
         <button type="button" onClick={() => jumpTo(i)} className="absolute inset-0 rounded-xl" aria-label={t.common.playX(track.title)} />
-        <Artwork src={track.thumb} className="pointer-events-none size-10 rounded-[8px]" />
-        <div className="pointer-events-none min-w-0 flex-1">
-          <p className={cn("truncate text-sm font-medium", isCurrent ? "text-accent-text" : "text-fg")}>{track.title}</p>
-          <p className="truncate text-xs text-fg-2">{track.artist}</p>
-        </div>
-        {isCurrent ? (
-          <Equalizer live={live} className="mr-2" />
-        ) : (
-          <>
-            <span className="pointer-events-none font-mono text-xs text-fg-3 tabular-nums group-hover:hidden">
-              {track.duration ? formatTime(track.duration) : ""}
+        <div className="pointer-events-none relative shrink-0">
+          <Artwork src={track.thumb} className="size-12 rounded-[8px]" />
+          {isCurrent && (
+            <span className="absolute inset-0 grid place-items-center rounded-[8px] bg-black/45">
+              <Equalizer live={live} />
             </span>
-            <button
-              type="button"
-              onClick={() => removeAt(i)}
-              aria-label={t.queue.removeX(track.title)}
-              title={t.queue.remove}
-              className="relative z-10 hidden size-8 place-items-center rounded-full text-fg-2 hover:bg-surface-4 hover:text-fg group-hover:grid max-md:grid"
-            >
-              <XIcon size={16} />
-            </button>
-          </>
+          )}
+        </div>
+        <div className="pointer-events-none min-w-0 flex-1">
+          <p className={cn("line-clamp-2 text-[15px] leading-snug font-medium", isCurrent ? "text-accent-text" : "text-fg")}>{track.title}</p>
+          <p className="mt-0.5 truncate text-[13px] text-fg-2">
+            {[track.artist, track.duration ? formatTime(track.duration) : ""].filter(Boolean).join(" • ")}
+          </p>
+        </div>
+        {!isCurrent && (
+          <button
+            type="button"
+            onClick={() => removeAt(i)}
+            aria-label={t.queue.removeX(track.title)}
+            title={t.queue.remove}
+            className="relative z-10 grid size-9 shrink-0 place-items-center rounded-full text-fg-2 hover:bg-surface-4 hover:text-fg md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+          >
+            <XIcon size={18} />
+          </button>
         )}
       </li>
     );
   };
 
   return (
-    <div className={cn("flex flex-col gap-4", compact ? "" : "pb-4")}>
-      <section>
-        <h3 className="px-2 pb-1.5 text-xs font-medium text-fg-3">{t.queue.nowPlaying}</h3>
-        <ul>{row(index, true)}</ul>
-      </section>
-
-      <section>
-        <div className="flex items-center justify-between px-2 pb-1.5">
-          <h3 className="text-xs font-medium text-fg-3">
-            {t.queue.upNext} <span className="font-mono">{upcoming.length}</span>
-          </h3>
-          {upcoming.length > 0 && (
-            <button type="button" onClick={clearUpcoming} className="text-xs font-medium text-fg-2 hover:text-fg">
-              {t.queue.clear}
-            </button>
-          )}
-        </div>
-        {upcoming.length ? (
-          <ul>{upcoming.map((_, k) => row(index + 1 + k, false))}</ul>
-        ) : (
-          <p className="px-2 text-sm text-fg-2">{t.queue.nothingQueued}</p>
+    <div className="flex flex-col gap-2 pb-4">
+      <div className="flex items-center justify-between px-2">
+        <h3 className="text-lg font-bold tracking-tight">{t.queue.title}</h3>
+        {upcoming.length > 0 && (
+          <button type="button" onClick={clearUpcoming} className="h-9 px-1 text-sm font-medium text-fg-2 hover:text-fg">
+            {t.queue.clear}
+          </button>
         )}
-      </section>
-
+      </div>
+      <ul className="flex flex-col gap-0.5">
+        {row(index, true)}
+        {upcoming.map((_, k) => row(index + 1 + k, false))}
+      </ul>
     </div>
   );
 }

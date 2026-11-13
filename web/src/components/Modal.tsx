@@ -1,8 +1,9 @@
 import { XIcon } from "@phosphor-icons/react";
 import { AnimatePresence, motion, useDragControls, useReducedMotion } from "motion/react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { MD, useMediaQuery } from "../hooks/useMediaQuery";
+import { usePullDownToDrag } from "../hooks/usePullDownToDrag";
 import { useT } from "../i18n";
 import { IconButton } from "./IconButton";
 import { PresenceLayer } from "./PresenceLayer";
@@ -31,6 +32,9 @@ export function Modal({ open, onClose, title, children }: Props) {
   }, [open, onClose]);
 
   const drag = useDragControls();
+  // On phones the whole sheet can be pulled down to close, not only its title bar.
+  const body = useRef<HTMLDivElement>(null);
+  usePullDownToDrag(body, drag, open && !isMd);
   const from = reduce ? { opacity: 0 } : isMd ? { opacity: 0, scale: 0.96, y: 8 } : { y: "100%" };
 
   return createPortal(
@@ -63,7 +67,7 @@ export function Modal({ open, onClose, title, children }: Props) {
             }}
             className="island safe-bottom relative w-full rounded-b-none md:mx-4 md:max-w-md md:rounded-[20px]"
           >
-            <div className="island-core p-4 md:p-5">
+            <div ref={body} className="island-core p-4 md:p-5">
               <div className="mb-3 flex touch-none items-center justify-between gap-3" onPointerDown={(e) => !isMd && drag.start(e)}>
                 <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
                 <IconButton label={t.common.close} size="sm" onClick={onClose}>

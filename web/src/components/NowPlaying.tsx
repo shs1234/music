@@ -1,21 +1,28 @@
 import {
   CaretDownIcon,
+  DotsThreeVerticalIcon,
+  HeartIcon,
+  ListPlusIcon,
   MagnifyingGlassIcon,
-  QueueIcon,
   VideoCameraSlashIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { AnimatePresence, motion, useDragControls, useReducedMotion, type DragControls } from "motion/react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { AnimatePresence, motion, useDragControls, useReducedMotion } from "motion/react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useLocation, useNavigate } from "react-router";
+import { usePullDownToDrag } from "../hooks/usePullDownToDrag";
 import { useT } from "../i18n";
+import { capabilities } from "../lib/api";
 import { cn } from "../lib/format";
 import type { Track } from "../lib/types";
 import { selectCurrent, usePlayer, useStatusText } from "../player/player";
+import { useLibrary } from "../stores/library";
 import { useUi, type PanelTab } from "../stores/ui";
 import { Artwork } from "./Artwork";
-import { FavoriteButton, ModeSwitch, Scrubber, Transport } from "./Controls";
+import { FavoriteButton, ModeSwitch, PlayPauseIcon, Scrubber, Transport } from "./Controls";
 import { IconButton } from "./IconButton";
+import { Marquee } from "./Marquee";
 import { PresenceLayer } from "./PresenceLayer";
 import { QueueList } from "./Queue";
 import { SLOT, VideoSlot } from "./Video";
@@ -71,18 +78,59 @@ function Stage({ track, slot, className }: { track: Track; slot: number; classNa
   );
 }
 
-function TrackHeading({ track, large = false }: { track: Track; large?: boolean }) {
+function TrackHeading({ track }: { track: Track }) {
   const statusText = useStatusText();
   const status = usePlayer((s) => s.status);
   return (
     <div className="flex items-center gap-3">
       <div className="min-w-0 flex-1">
-        <h2 className={cn("truncate font-semibold tracking-tight", large ? "text-[22px] leading-tight" : "text-lg")}>{track.title}</h2>
-        <p className={cn("truncate", large ? "text-base" : "text-sm", status === "error" ? "text-danger" : "text-fg-2")}>
+        <h2 className="truncate text-lg font-semibold tracking-tight">{track.title}</h2>
+        <p className={cn("truncate text-sm", status === "error" ? "text-danger" : "text-fg-2")}>
           {statusText ?? [track.artist, track.album].filter(Boolean).join(" · ")}
         </p>
       </div>
-      <FavoriteButton track={track} size={large ? "lg" : "md"} />
+      <FavoriteButton track={track} />
+    </div>
+  );
+}
+
+/** The phone player's title: large, drifting sideways when it doesn't fit, with the artist under it. */
+function SheetHeading({ track }: { track: Track }) {
+  const statusText = useStatusText();
+  const status = usePlayer((s) => s.status);
+  return (
+    <div>
+      <h2>
+        <Marquee text={track.title} className="text-2xl leading-tight font-bold tracking-tight" />
+      </h2>
+      <p className={cn("mt-1 truncate text-base", status === "error" ? "text-danger" : "text-fg-2")}>
+        {statusText ?? [track.artist, track.album].filter(Boolean).join(" · ")}
+      </p>
+    </div>
+  );
+}
+
+/** Like and save, as a row of chips under the title. */
+function SheetActions({ track }: { track: Track }) {
+  const isFavorite = useLibrary((s) => s.favorites.some((x) => x.id === track.id));
+  const toggleFavorite = useLibrary((s) => s.toggleFavorite);
+  const openAddToPlaylist = useUi((s) => s.openAddToPlaylist);
+  const t = useT();
+  const chip = "flex h-10 items-center gap-2 rounded-full bg-fg/10 px-4 text-sm font-medium transition-transform active:scale-[0.97]";
+  return (
+    <div className="flex gap-2">
+      <button
+        type="button"
+        aria-label={isFavorite ? t.common.removeFromFavorites : t.common.addToFavorites}
+        aria-pressed={isFavorite}
+        onClick={() => void toggleFavorite(track)}
+        className={cn(chip, isFavorite && "text-accent-text")}
+      >
+        <HeartIcon size={20} weight={isFavorite ? "fill" : "regular"} /> {t.common.favorite}
+      </button>
+      <button type="button" aria-label={t.trackMenu.addToPlaylist} onClick={() => openAddToPlaylist([track])} className={chip}>
+        <ListPlusIcon size={20} /> {t.nowPlaying.save}
+      </button>
     </div>
   );
 }
@@ -219,56 +267,52 @@ export function PanelDrawer() {
   );
 }
 
-/**
- * Pulling a list down while it is already at the top drags the sheet instead (to close it), as phone apps do.
- * Moving up, or starting lower in the list, scrolls the list as usual.
- */
-function usePullDownToDrag(ref: RefObject<HTMLElement | null>, drag: DragControls, enabled: boolean) {
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !enabled) return;
-    let startY = 0;
-    let atTop = false;
-    let dragging = false;
-    const onDown = (e: PointerEvent) => {
-      startY = e.clientY;
-      atTop = el.scrollTop <= 0;
-      dragging = false;
-    };
-    const onMove = (e: PointerEvent) => {
-      if (atTop && !dragging && e.clientY - startY > 6) {
-        dragging = true;
-        drag.start(e);
-      }
-    };
-    // Keep the browser from scrolling (or bouncing) the list while it is being pulled down from the top.
-    const onTouchMove = (e: TouchEvent) => {
-      const y = e.touches[0]?.clientY ?? 0;
-      if (atTop && el.scrollTop <= 0 && y >= startY) e.preventDefault();
-    };
-    el.addEventListener("pointerdown", onDown);
-    el.addEventListener("pointermove", onMove);
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    return () => {
-      el.removeEventListener("pointerdown", onDown);
-      el.removeEventListener("pointermove", onMove);
-      el.removeEventListener("touchmove", onTouchMove);
-    };
-  }, [ref, drag, enabled]);
+/** The cover, blurred, as the backdrop of the phone player and of the queue over it. */
+function Backdrop({ track }: { track: Track }) {
+  return (
+    <>
+      <img
+        src={track.thumb}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 h-1/2 w-full scale-125 object-cover opacity-25 blur-3xl"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-transparent via-bg/70 to-bg" />
+    </>
+  );
 }
 
-/** Full-screen Now Playing for phones. Drag down (or Back) to close. */
+const SHEET_SPRING = { type: "spring", stiffness: 380, damping: 36 } as const;
+
+/**
+ * Full-screen Now Playing for phones. Drag down (or Back) to close.
+ *
+ * The queue comes up over the player (swipe up, or its label at the bottom) and goes back down to it the same way:
+ * dragging it down, its handle, the small player at its top, or Back. It is a history entry of its own on top of
+ * the sheet's, which is what makes Back return to the player rather than leave the sheet.
+ */
 export function NowPlayingSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const track = usePlayer(selectCurrent);
   const reduce = useReducedMotion();
   const drag = useDragControls();
-  const [view, setView] = useState<"player" | "queue">("player");
+  const queueDrag = useDragControls();
   const queueRef = useRef<HTMLDivElement>(null);
+  const toggle = usePlayer((s) => s.toggle);
+  const playing = usePlayer((s) => s.status === "playing");
+  const openMenu = useUi((s) => s.openMenu);
+  const location = useLocation();
+  const navigate = useNavigate();
   const t = useT();
-  usePullDownToDrag(queueRef, drag, open && view === "queue");
+
+  const queueOpen = open && !!(location.state as { queue?: boolean } | null)?.queue;
+  const openQueue = () => navigate({ hash: location.hash }, { state: { queue: true } });
+  const closeQueue = () => {
+    if (queueOpen) navigate(-1);
+  };
+  usePullDownToDrag(queueRef, queueDrag, queueOpen);
 
   return createPortal(
-    <AnimatePresence onExitComplete={() => setView("player")}>
+    <AnimatePresence>
       {open && track && (
         <PresenceLayer className="contents">
         <motion.div
@@ -278,7 +322,7 @@ export function NowPlayingSheet({ open, onClose }: { open: boolean; onClose: () 
           initial={reduce ? { opacity: 0 } : { y: "100%" }}
           animate={{ y: 0, opacity: 1 }}
           exit={reduce ? { opacity: 0 } : { y: "100%" }}
-          transition={{ type: "spring", stiffness: 380, damping: 36 }}
+          transition={SHEET_SPRING}
           drag="y"
           dragListener={false}
           dragControls={drag}
@@ -286,57 +330,116 @@ export function NowPlayingSheet({ open, onClose }: { open: boolean; onClose: () 
           dragElastic={{ top: 0, bottom: 0.9 }}
           onDragEnd={(_, info) => {
             if (info.offset.y > 120 || info.velocity.y > 700) onClose();
+            // The sheet itself can't go up, but a swipe up on the player asks for the queue under it.
+            else if (!queueOpen && (info.offset.y < -70 || info.velocity.y < -600)) openQueue();
           }}
           className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-bg md:hidden"
         >
-          <img
-            src={track.thumb}
-            alt=""
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 h-1/2 w-full scale-125 object-cover opacity-25 blur-3xl"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-transparent via-bg/70 to-bg" />
+          <Backdrop track={track} />
 
           <div className="overlay-top relative flex min-h-0 flex-1 flex-col px-5">
             <div className="flex h-14 touch-none items-center justify-between" onPointerDown={(e) => drag.start(e)}>
-              <IconButton label={t.common.close} onClick={onClose} className="-ml-2 text-fg">
+              <IconButton label={t.common.close} onClick={onClose} className="-ml-2 text-fg!">
                 <CaretDownIcon size={24} />
               </IconButton>
-              <div className="mx-auto mt-0 h-1 w-10 rounded-full bg-fg-3/50" />
+              {capabilities.video ? <ModeSwitch /> : <div className="h-1 w-10 rounded-full bg-fg-3/50" />}
               <IconButton
-                label={view === "queue" ? t.nowPlaying.backToPlayer : t.nowPlaying.showQueue}
-                active={view === "queue"}
-                onClick={() => setView(view === "queue" ? "player" : "queue")}
-                className="-mr-2"
+                label={t.trackList.moreFor(track.title)}
+                onClick={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  openMenu({ track, x: r.right - 256, y: r.bottom + 6 });
+                }}
+                className="-mr-2 text-fg!"
               >
-                <QueueIcon size={22} />
+                <DotsThreeVerticalIcon size={24} weight="bold" />
               </IconButton>
             </div>
 
-            {view === "queue" ? (
-              <div ref={queueRef} className="scroll-area -mx-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(24px+env(safe-area-inset-bottom))]">
-                <QueueList />
+            <div
+              className="flex flex-1 touch-none flex-col justify-evenly gap-3"
+              onPointerDown={(e) => {
+                // Anywhere but the progress bar drags the sheet; taps on buttons still go through.
+                if (!(e.target as Element).closest("[role=slider]")) drag.start(e);
+              }}
+            >
+              <div>
+                <Stage track={track} slot={SLOT.sheet} className="max-w-[min(100%,40dvh)]" />
               </div>
-            ) : (
-              <div
-                className="flex flex-1 touch-none flex-col justify-evenly gap-4 pb-[calc(16px+env(safe-area-inset-bottom))]"
-                onPointerDown={(e) => {
-                  // Anywhere but the progress bar drags the sheet; taps on buttons still go through.
-                  if (!(e.target as Element).closest("[role=slider]")) drag.start(e);
-                }}
+              <div className="flex flex-col gap-4">
+                <SheetHeading track={track} />
+                <SheetActions track={track} />
+                <Scrubber touch />
+                <Transport big />
+              </div>
+              <button
+                type="button"
+                onClick={openQueue}
+                className="mx-auto flex flex-col items-center gap-3 px-8 pb-[calc(12px+env(safe-area-inset-bottom))] text-[15px] font-semibold"
               >
-                <div>
-                  <Stage track={track} slot={SLOT.sheet} className="max-w-[min(100%,46dvh)]" />
-                </div>
-                <div className="flex flex-col gap-4">
-                  <TrackHeading track={track} large />
-                  <Scrubber touch />
-                  <Transport big />
-                  <ModeSwitch className="justify-center" />
-                </div>
-              </div>
-            )}
+                <span className="h-1 w-10 rounded-full bg-fg-3/50" />
+                {t.queue.title}
+              </button>
+            </div>
           </div>
+
+          <AnimatePresence initial={false}>
+            {queueOpen && (
+              <motion.div
+                initial={reduce ? { opacity: 0 } : { y: "100%" }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={reduce ? { opacity: 0 } : { y: "100%" }}
+                transition={SHEET_SPRING}
+                drag="y"
+                dragListener={false}
+                dragControls={queueDrag}
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={{ top: 0, bottom: 0.9 }}
+                onDragEnd={(_, info) => {
+                  if (info.offset.y > 100 || info.velocity.y > 600) closeQueue();
+                }}
+                className="absolute inset-0 flex flex-col overflow-hidden bg-bg"
+              >
+                <Backdrop track={track} />
+                <div className="overlay-top relative flex min-h-0 flex-1 flex-col px-5">
+                  {/* What is playing, small; a tap goes back to the player. */}
+                  <div className="flex h-16 touch-none items-center gap-2" onPointerDown={(e) => queueDrag.start(e)}>
+                    <button
+                      type="button"
+                      onClick={closeQueue}
+                      aria-label={t.nowPlaying.backToPlayer}
+                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    >
+                      <Artwork src={track.thumb} className="size-12 shrink-0 rounded-[8px]" />
+                      <span className="min-w-0 flex-1">
+                        <Marquee text={track.title} className="text-base font-semibold" />
+                        <span className="block truncate text-sm text-fg-2">{track.artist}</span>
+                      </span>
+                    </button>
+                    <IconButton label={playing ? t.common.pause : t.common.play} size="lg" onClick={toggle} className="-mr-2 text-fg!">
+                      <PlayPauseIcon size={28} />
+                    </IconButton>
+                  </div>
+                  <div className="-mx-5 mt-1 flex min-h-0 flex-1 flex-col rounded-t-[20px] bg-fg/[0.06]">
+                    <button
+                      type="button"
+                      onClick={closeQueue}
+                      aria-label={t.nowPlaying.backToPlayer}
+                      className="grid h-6 shrink-0 touch-none place-items-center"
+                      onPointerDown={(e) => queueDrag.start(e)}
+                    >
+                      <span className="h-1 w-10 rounded-full bg-fg-3/50" />
+                    </button>
+                    <div
+                      ref={queueRef}
+                      className="scroll-area min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(24px+env(safe-area-inset-bottom))]"
+                    >
+                      <QueueList />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
         </PresenceLayer>
       )}

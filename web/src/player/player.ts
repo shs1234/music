@@ -47,6 +47,8 @@ interface PlayerState {
   jumpTo: (i: number) => void;
   clearUpcoming: () => void;
   toggle: () => void;
+  /** Stops the sound whatever the player is doing, a track still loading included. */
+  pause: () => void;
   next: () => void;
   prev: () => void;
   seek: (seconds: number) => void;
@@ -445,6 +447,15 @@ export const usePlayer = create<PlayerState>((set, get) => {
       else media.pause();
     },
 
+    pause: () => {
+      const s = get();
+      if (s.status === "paused" || s.status === "error") return;
+      if (loaded) mediaFor(loaded.kind).pause();
+      // The element's own pause event is ignored while loading, so say it here.
+      set({ status: "paused", statusText: null });
+      syncPlaybackState();
+    },
+
     next: () => {
       const s = get();
       if (s.index < s.queue.length - 1) return load(s.index + 1);
@@ -601,7 +612,9 @@ if (systemMedia) {
   const p = () => usePlayer.getState();
   systemMedia.onAction((action, position) => {
     if (action === "play" && p().status !== "playing") p().toggle();
-    else if (action === "pause" && p().status === "playing") p().toggle();
+    // Not only while "playing": headphones going away makes the audio stall for a moment (status "loading"), and
+    // that pause must still stop the music rather than let it go on through the speaker.
+    else if (action === "pause") p().pause();
     else if (action === "next") p().next();
     else if (action === "previous") p().prev();
     else if (action === "seek" && position != null) p().seek(position);
@@ -613,7 +626,7 @@ if ("mediaSession" in navigator) {
   const p = () => usePlayer.getState();
   const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
     ["play", () => p().status !== "playing" && p().toggle()],
-    ["pause", () => p().status === "playing" && p().toggle()],
+    ["pause", () => p().pause()],
     ["previoustrack", () => p().prev()],
     ["nexttrack", () => p().next()],
     ["seekto", (d) => d.seekTime != null && p().seek(d.seekTime)],

@@ -73,9 +73,3 @@ export const useAppearance = create<AppearanceState>((set, get) => ({
     set({ ...DEFAULT_APPEARANCE });
   },
 }));
-
-/** The current preferences without the store's functions (for backups). */
-export function currentAppearance(): Appearance {
-  const { set: _s, reset: _r, ...a } = useAppearance.getState();
-  return a;
-}

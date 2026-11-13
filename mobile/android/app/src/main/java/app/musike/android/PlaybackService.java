@@ -329,7 +329,10 @@ public class PlaybackService extends Service {
     private final BroadcastReceiver onNoisy = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction()) && state.playing) emit("pause", -1);
+            if (AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())) {
+                Log.i(TAG, "Audio becoming noisy (headphones gone): pausing");
+                emit("pause", -1);
+            }
         }
     };
 

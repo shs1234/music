@@ -13,8 +13,6 @@ import { cn } from "../lib/format";
 import { useSystem } from "../stores/system";
 import { useUi } from "../stores/ui";
 import { AccountSection } from "./AccountSection";
-import { BackupSection } from "./BackupSection";
-import { LayoutSection } from "./CustomizeSection";
 import { Modal } from "./Modal";
 
 function Segmented<T extends string>({
@@ -137,10 +135,6 @@ export function SettingsDialog() {
             ]}
           />
         </section>
-
-        <LayoutSection />
-
-        <BackupSection />
 
         {capabilities.engineSettings && (
         <section className="flex flex-col gap-3">

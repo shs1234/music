@@ -209,6 +209,29 @@
   animation-delay: -0.55s;
 }
 
+/* A title too long for its line drifts left, rests a moment at the start, and repeats (Marquee.tsx). */
+@keyframes marquee {
+  0%,
+  14% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(var(--marquee-shift));
+  }
+}
+.marquee {
+  animation: marquee linear infinite;
+  will-change: transform;
+}
+.marquee-box {
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+  }
+}
+
 @keyframes shimmer {
   from {
     background-position: -200% 0;

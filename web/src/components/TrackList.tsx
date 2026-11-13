@@ -1,4 +1,4 @@
-import { ClockIcon, DotsThreeIcon, HeartIcon, VideoCameraIcon } from "@phosphor-icons/react";
+import { ClockIcon, DotsThreeVerticalIcon, HeartIcon, VideoCameraIcon } from "@phosphor-icons/react";
 import { memo, type MouseEvent } from "react";
 import { useT } from "../i18n";
 import { cn, formatTime } from "../lib/format";
@@ -16,10 +16,12 @@ interface RowProps {
   onPlay: () => void;
   playlistId?: string;
   showAlbum: boolean;
+  /** A row of a sideways shelf: larger, and its title stays on one line so every row is the same height. */
+  shelf?: boolean;
   className?: string;
 }
 
-const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, showAlbum, className }: RowProps) {
+const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, showAlbum, shelf, className }: RowProps) {
   const isCurrent = usePlayer((s) => selectCurrent(s)?.id === track.id);
   const isPlaying = usePlayer((s) => s.status === "playing" || s.status === "loading");
   const isFavorite = useLibrary((s) => s.favorites.some((t) => t.id === track.id));
@@ -39,7 +41,8 @@ const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, s
     <li
       onContextMenu={menuAt}
       className={cn(
-        "group relative grid items-center gap-3 rounded-xl px-2 py-1.5 transition-colors duration-150 hover:bg-surface-2 md:px-3",
+        "group relative grid items-center rounded-xl px-2 transition-colors duration-150 hover:bg-surface-2 md:px-3",
+        shelf ? "gap-4 py-2" : "gap-3 py-1.5",
         showAlbum
           ? "grid-cols-[auto_1fr_auto] md:grid-cols-[28px_auto_1fr_auto_auto] lg:grid-cols-[28px_auto_minmax(0,1.4fr)_minmax(0,1fr)_auto_auto]"
           : "grid-cols-[auto_1fr_auto] md:grid-cols-[28px_auto_1fr_auto_auto]",
@@ -58,7 +61,7 @@ const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, s
       </span>
 
       <div className="pointer-events-none relative">
-        <Artwork src={track.thumb} className="size-11 rounded-[10px]" />
+        <Artwork src={track.thumb} className={cn("rounded-[10px]", shelf ? "size-14" : "size-11")} />
         {isCurrent && (
           <span className="absolute inset-0 grid place-items-center rounded-[10px] bg-black/45 md:hidden">
             <Equalizer live={isPlaying} />
@@ -67,10 +70,17 @@ const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, s
       </div>
 
       <div className="pointer-events-none min-w-0">
-        <p className={cn("truncate text-[15px] leading-tight font-medium", isCurrent ? "text-accent-text" : "text-fg")}>
+        <p
+          className={cn(
+            "font-medium",
+            // In a list a long title takes a second line on phones; the wide layouts have the room for one.
+            shelf ? "truncate text-base leading-tight" : "line-clamp-2 text-[15px] leading-snug md:line-clamp-1",
+            isCurrent ? "text-accent-text" : "text-fg",
+          )}
+        >
           {track.title}
         </p>
-        <p className="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-fg-2">
+        <p className={cn("flex items-center gap-1.5 truncate text-fg-2", shelf ? "mt-1 text-sm" : "mt-0.5 text-[13px]")}>
           {track.kind === "video" && <VideoCameraIcon size={13} className="shrink-0 text-fg-3" aria-label={t.common.video} />}
           <span className="truncate">{track.artist || t.common.youtube}</span>
         </p>
@@ -103,7 +113,7 @@ const TrackRow = memo(function TrackRow({ track, position, onPlay, playlistId, s
         title={t.trackList.more}
         className="relative z-10 grid size-9 place-items-center rounded-full text-fg-2 transition-[opacity,background-color] hover:bg-surface-3 hover:text-fg md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
       >
-        <DotsThreeIcon size={22} weight="bold" />
+        <DotsThreeVerticalIcon size={22} weight="bold" />
       </button>
     </li>
   );
@@ -164,9 +174,9 @@ export function TrackList({ tracks, context, playlistId, showAlbum: albumWanted 
 export function TrackShelf({ tracks }: { tracks: Track[] }) {
   const playList = usePlayer((s) => s.playList);
   return (
-    <ul className="no-scrollbar grid snap-x snap-mandatory scroll-px-2 auto-cols-[calc(100%-3.5rem)] grid-flow-col grid-rows-4 gap-x-2 overflow-x-auto overscroll-x-contain px-2 md:scroll-px-3 md:auto-cols-[calc(50%-2rem)] md:px-3">
+    <ul className="no-scrollbar grid snap-x snap-mandatory scroll-px-2 auto-cols-[calc(100%-2.5rem)] grid-flow-col grid-rows-4 gap-x-2 overflow-x-auto overscroll-x-contain px-2 md:scroll-px-3 md:auto-cols-[calc(50%-2rem)] md:px-3">
       {tracks.map((t, i) => (
-        <TrackRow key={t.id} track={t} position={i} showAlbum={false} className="snap-start" onPlay={() => playList(tracks, i)} />
+        <TrackRow key={t.id} track={t} position={i} showAlbum={false} shelf className="snap-start" onPlay={() => playList(tracks, i)} />
       ))}
     </ul>
   );

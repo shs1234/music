@@ -119,18 +119,35 @@ export const MUSIC_MIXES = [
 ] as const;
 
 /**
- * One of YouTube Music's mixes (WEB_REMIX, next playlistId). Unlike the home feed, the mixes are served to free
- * accounts in Premium-only countries too. Only the first page (about 24 tracks) is read.
+ * One of YouTube Music's mixes (WEB_REMIX, next playlistId), all of it: the first page has 24 tracks and the pages
+ * after it bring the mix to 50-65. Unlike the home feed, the mixes are served to free accounts in Premium-only
+ * countries too.
  */
 export async function musicMix(playlistId: string): Promise<Track[]> {
   const { cookie } = await Auth.status();
   if (!cookie) throw new SignedOutError();
-  const json = await post(cookie, MUSIC, "next", WEB_REMIX, { playlistId });
-  const items: any[] =
-    json?.contents?.singleColumnMusicWatchNextResultsRenderer?.tabbedRenderer?.watchNextTabbedResultsRenderer?.tabs?.[0]?.tabRenderer
-      ?.content?.musicQueueRenderer?.content?.playlistPanelRenderer?.contents ?? [];
-  return unique(items.map((c) => c?.playlistPanelVideoRenderer).map(queueItem));
+  const first = await post(cookie, MUSIC, "next", WEB_REMIX, { playlistId });
+  let panel: any =
+    first?.contents?.singleColumnMusicWatchNextResultsRenderer?.tabbedRenderer?.watchNextTabbedResultsRenderer?.tabs?.[0]?.tabRenderer
+      ?.content?.musicQueueRenderer?.content?.playlistPanelRenderer;
+  const tracks = unique(queueItems(panel));
+  // The last pages come back empty while still pointing at a next one, so stop at the first that adds nothing.
+  for (let page = 0; page < 6; page++) {
+    const token: string | undefined =
+      panel?.continuations?.[0]?.nextRadioContinuationData?.continuation ?? panel?.continuations?.[0]?.nextContinuationData?.continuation;
+    if (!token) break;
+    const more = await post(cookie, MUSIC, "next", WEB_REMIX, { playlistId }, { ctoken: token, continuation: token, type: "next" }).catch(
+      () => null,
+    );
+    panel = more?.continuationContents?.playlistPanelContinuation;
+    const merged = unique([...tracks, ...queueItems(panel)]);
+    if (merged.length === tracks.length) break;
+    tracks.splice(0, tracks.length, ...merged);
+  }
+  return tracks;
 }
+
+const queueItems = (panel: any): (Track | null)[] => ((panel?.contents ?? []) as any[]).map((c) => c?.playlistPanelVideoRenderer).map(queueItem);
 
 function musicItem(r: any): Track | null {
   if (!r) return null;
@@ -202,7 +219,14 @@ function unique(list: (Track | null)[]): Track[] {
   return list.filter((t): t is Track => !!t && !seen.has(t.id) && !!seen.add(t.id));
 }
 
-async function post(cookie: string, origin: string, endpoint: string, client: typeof WEB, params: object): Promise<any> {
+async function post(
+  cookie: string,
+  origin: string,
+  endpoint: string,
+  client: typeof WEB,
+  params: object,
+  query: Record<string, string> = {},
+): Promise<any> {
   const body = { ...params, context: { client: { clientName: client.name, clientVersion: client.version, hl: "ko", gl: "KR" } } };
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -217,7 +241,7 @@ async function post(cookie: string, origin: string, endpoint: string, client: ty
   };
   const auth = await authorization(cookie, origin);
   if (auth) headers.authorization = auth;
-  const res = await nativeFetch(`${origin}/youtubei/v1/${endpoint}?prettyPrint=false`, {
+  const res = await nativeFetch(`${origin}/youtubei/v1/${endpoint}?${new URLSearchParams({ prettyPrint: "false", ...query })}`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),
